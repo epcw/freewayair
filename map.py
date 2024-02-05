@@ -13,7 +13,7 @@ outfile = 'index.html'
 df_filename = 'map/station_distance-2023.csv'
 
 df = pd.read_csv(df_filename, dtype={'station_index': str})
-df_halloween = df[df['date'] == '2023-10-31']
+# df_halloween = df[df['date'] == '2023-10-31']
 
 # Motorways within the Purple Air bounding box
 result = overpass.query('way["highway"="motorway"](46.8555182, -122.755863, 48.1162201, -121.7631845); out geom;') # Northern WA
@@ -64,9 +64,9 @@ for way, data in interstates.items():
         pass
 
 # create stations df
-df_stations = df_halloween[['name','latitude','longitude','pm10_0_atm']].drop_duplicates()
+df_stations = df[['name','latitude','longitude','station_median_pm10_0']].drop_duplicates()
 df_stations.reset_index()
-df_stations = df_stations[['name','latitude','longitude','pm10_0_atm']]
+df_stations = df_stations[['name','latitude','longitude','station_median_pm10_0']]
 stations = df_stations.to_dict(orient="records")
 
 # Draw stations
@@ -75,24 +75,45 @@ for row in stations:
     latitude = row['latitude']
     longitude = row['longitude']
     name = row['name']
-    if row['pm10_0_atm']  <= 50:
-        AQI = row['pm10_0_atm']
+    # magnified color scale for visibility
+    if row['station_median_pm10_0']  <= 5:
+        AQI = row['station_median_pm10_0']
         color = "green"
-    elif AQI <= 100:
-        AQI = row['pm10_0_atm']
+    elif AQI <= 10:
+        AQI = row['station_median_pm10_0']
         color = "yellow"
-    elif AQI <= 250:
-        AQI = 100 + (row['pm10_0_atm'] -100) * 100 / 150
+    elif AQI <= 25:
+        AQI = 10 + (row['station_median_pm10_0'] -10) * 100 / 150
         color = "red"
-    elif AQI <= 350:
-        AQI = 200 + (row['pm10_0_atm'] - 250)
+    elif AQI <= 35:
+        AQI = 20 + (row['station_median_pm10_0'] - 25)
         color = "purple"
-    elif AQI <= 430:
-        AQI = 400 + (row['pm10_0_atm'] - 350) * 100 / 80
+    elif AQI <= 43:
+        AQI = 40 + (row['station_median_pm10_0'] - 35) * 100 / 80
         color = "#800000"
     else:
-        AQI = 400 + (row['pm10_0_atm'] - 430) * 100 / 80
+        AQI = 40 + (row['station_median_pm10_0'] - 43) * 100 / 80
         color = "#800000"
+
+    # # EPA color scale
+    # if row['station_median_pm10_0']  <= 50:
+    #     AQI = row['station_median_pm10_0']
+    #     color = "green"
+    # elif AQI <= 100:
+    #     AQI = row['station_median_pm10_0']
+    #     color = "yellow"
+    # elif AQI <= 250:
+    #     AQI = 100 + (row['station_median_pm10_0'] -100) * 100 / 150
+    #     color = "red"
+    # elif AQI <= 350:
+    #     AQI = 200 + (row['station_median_pm10_0'] - 250)
+    #     color = "purple"
+    # elif AQI <= 430:
+    #     AQI = 400 + (row['station_median_pm10_0'] - 350) * 100 / 80
+    #     color = "#800000"
+    # else:
+    #     AQI = 400 + (row['station_median_pm10_0'] - 430) * 100 / 80
+    #     color = "#800000"
     popup_text = str(name) + '<br><br>AQI: ' + str(AQI)
     popup = folium.Popup(popup_text, min_width=100,max_width=100)
     # icon = folium.Icon(icon="", icon_color=color, color=color)

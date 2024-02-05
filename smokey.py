@@ -7,17 +7,18 @@ file = 'map/station_distance-2023.csv'
 df = pd.read_csv(file)
 print('Plotting AQI')
 
-df = df[df['pm10_0_atm'] < 100]
+df = df[df['pm10_0_atm'] < 500]
 # df = df[df['distance'] < 5]
 # df = df[df['date'] == ['2020-10-31']]
 
 plt.figure(figsize=(16,12))
-sns.regplot(data=df[df['date'] == '2023-10-31'], x='distance', y='pm10_0_atm')
+# sns.regplot(data=df[df['date'] == '2023-10-31'], x='distance', y='pm10_0_atm')
+sns.regplot(data=df, x='distance', y='station_median_pm10_0')
 # sns.regplot(data=df, x='distance', y='pm10_0_atm')
 # sns.regplot(data=df[df['date'] == '2020-10-31'], x='distance', y='pm2_5_AVG')
 
 
-plt.savefig('distance-2023.png')
+plt.savefig('distance-2023-median.png')
 
 # # df = pd.read_csv('data/aqi_data_stacked.csv')
 # df = pd.read_csv('map/station_list.csv')

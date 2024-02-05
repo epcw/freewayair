@@ -34,6 +34,12 @@ d3_df.name.replace(',',' ',regex=True,inplace=True)
 # additional filtering
 d3_df.drop(d3_df[d3_df['pm2_5_AVG'] >= 600].index, inplace=True)
 d3_df.dropna(subset=['pm2_5_AVG'])
+d3_df.drop(d3_df[d3_df['pm10_0_atm'] >= 600].index, inplace=True)
+d3_df.dropna(subset=['pm10_0_atm'])
+
+# calculate medians
+d3_df['station_median_pm2_5'] = d3_df.groupby('station_index')['pm2_5_AVG'].transform('median')
+d3_df['station_median_pm10_0'] = d3_df.groupby('station_index')['pm10_0_atm'].transform('median')
 
 d3_filename = 'map/station_list_2023.csv'
 d3_df.to_csv(d3_filename, index=False, quotechar='"', quoting=csv.QUOTE_NONE)
