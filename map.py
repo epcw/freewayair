@@ -1,4 +1,5 @@
 import folium
+import folium.plugins as plugins
 import pandas as pd
 import geopandas as gpd
 
@@ -63,60 +64,80 @@ for way, data in interstates.items():
     except:
         pass
 
-# create stations df
-df_stations = df[['name','latitude','longitude','station_median_pm10_0']].drop_duplicates()
-df_stations.reset_index()
-df_stations = df_stations[['name','latitude','longitude','station_median_pm10_0']]
-stations = df_stations.to_dict(orient="records")
+# TIME STEP VERSION
+timelist_tempo = []
 
-# Draw stations
-for row in stations:
-    print(row['name'],row['latitude'],row['longitude'])
-    latitude = row['latitude']
-    longitude = row['longitude']
-    name = row['name']
-    # magnified color scale for visibility
-    if row['station_median_pm10_0']  <= 5:
-        AQI = row['station_median_pm10_0']
-        color = "green"
-    elif AQI <= 10:
-        AQI = row['station_median_pm10_0']
-        color = "yellow"
-    elif AQI <= 25:
-        AQI = 10 + (row['station_median_pm10_0'] -10) * 100 / 150
-        color = "red"
-    elif AQI <= 35:
-        AQI = 20 + (row['station_median_pm10_0'] - 25)
-        color = "purple"
-    elif AQI <= 43:
-        AQI = 40 + (row['station_median_pm10_0'] - 35) * 100 / 80
-        color = "#800000"
-    else:
-        AQI = 40 + (row['station_median_pm10_0'] - 43) * 100 / 80
-        color = "#800000"
+df['weight'] = df['pm10_0_atm'] / 500
 
-    # # EPA color scale
-    # if row['station_median_pm10_0']  <= 50:
-    #     AQI = row['station_median_pm10_0']
-    #     color = "green"
-    # elif AQI <= 100:
-    #     AQI = row['station_median_pm10_0']
-    #     color = "yellow"
-    # elif AQI <= 250:
-    #     AQI = 100 + (row['station_median_pm10_0'] -100) * 100 / 150
-    #     color = "red"
-    # elif AQI <= 350:
-    #     AQI = 200 + (row['station_median_pm10_0'] - 250)
-    #     color = "purple"
-    # elif AQI <= 430:
-    #     AQI = 400 + (row['station_median_pm10_0'] - 350) * 100 / 80
-    #     color = "#800000"
-    # else:
-    #     AQI = 400 + (row['station_median_pm10_0'] - 430) * 100 / 80
-    #     color = "#800000"
-    popup_text = str(name) + '<br><br>AQI: ' + str(AQI)
-    popup = folium.Popup(popup_text, min_width=100,max_width=100)
-    # icon = folium.Icon(icon="", icon_color=color, color=color)
-    folium.CircleMarker(location=[latitude,longitude], popup=popup, color=color, fill_color=color, fill_opacity=0.7).add_to(m)
+weight_list = []
+# for x in df['date']:
+#     time_step = x
+
+for x in df['date'].sort_values().unique():
+    df_temp = df[df['date'] == x]
+    df_date = df_temp.drop_duplicates(subset=['latitude', 'longitude']).reset_index()
+    df_date = df_date[['latitude', 'longitude', 'weight']]
+    weight_list.append(df_date.values.tolist())
+
+    timelist_tempo.append(x)
+
+folium.plugins.HeatMapWithTime(weight_list, radius=30,index=timelist_tempo,auto_play=True, max_opacity=.7, min_speed=1,index_steps=1).add_to(m)
+
+# # MARKER VERSION
+# # create stations df
+# df_stations = df[['name','latitude','longitude','station_median_pm10_0']].drop_duplicates()
+# df_stations.reset_index()
+# df_stations = df_stations[['name','latitude','longitude','station_median_pm10_0']]
+# stations = df_stations.to_dict(orient="records")
+#
+# # Draw stations
+# for row in stations:
+#     print(row['name'],row['latitude'],row['longitude'])
+#     latitude = row['latitude']
+#     longitude = row['longitude']
+#     name = row['name']
+#     # magnified color scale for visibility
+#     if row['station_median_pm10_0']  <= 5:
+#         AQI = row['station_median_pm10_0']
+#         color = "green"
+#     elif AQI <= 10:
+#         AQI = row['station_median_pm10_0']
+#         color = "yellow"
+#     elif AQI <= 25:
+#         AQI = 10 + (row['station_median_pm10_0'] -10) * 100 / 150
+#         color = "red"
+#     elif AQI <= 35:
+#         AQI = 20 + (row['station_median_pm10_0'] - 25)
+#         color = "purple"
+#     elif AQI <= 43:
+#         AQI = 40 + (row['station_median_pm10_0'] - 35) * 100 / 80
+#         color = "#800000"
+#     else:
+#         AQI = 40 + (row['station_median_pm10_0'] - 43) * 100 / 80
+#         color = "#800000"
+#
+#     # # EPA color scale
+#     # if row['station_median_pm10_0']  <= 50:
+#     #     AQI = row['station_median_pm10_0']
+#     #     color = "green"
+#     # elif AQI <= 100:
+#     #     AQI = row['station_median_pm10_0']
+#     #     color = "yellow"
+#     # elif AQI <= 250:
+#     #     AQI = 100 + (row['station_median_pm10_0'] -100) * 100 / 150
+#     #     color = "red"
+#     # elif AQI <= 350:
+#     #     AQI = 200 + (row['station_median_pm10_0'] - 250)
+#     #     color = "purple"
+#     # elif AQI <= 430:
+#     #     AQI = 400 + (row['station_median_pm10_0'] - 350) * 100 / 80
+#     #     color = "#800000"
+#     # else:
+#     #     AQI = 400 + (row['station_median_pm10_0'] - 430) * 100 / 80
+#     #     color = "#800000"
+#     popup_text = str(name) + '<br><br>AQI: ' + str(AQI)
+#     popup = folium.Popup(popup_text, min_width=100,max_width=100)
+#     # icon = folium.Icon(icon="", icon_color=color, color=color)
+#     folium.CircleMarker(location=[latitude,longitude], popup=popup, color=color, fill_color=color, fill_opacity=0.7).add_to(m)
 
 m.save(outfile)
