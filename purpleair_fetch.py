@@ -18,8 +18,8 @@ headers= {'X-API-Key': api}
 bounding_boxes = [
     # [(-122.287065,47.574967),(-122.245523,47.506096)],  # rainier beach / valley
     # [(-122.247872,47.64417),(-122.192917,47.598775)]   # bellvue
-    [(-122.755863,48.1162201),(-121.7631845,46.8555182)] # all of puget sound
-    # [(-122.6126, 38.2182), (-121.7378, 37.2066)]  # SF Bay
+    # [(-122.755863,48.1162201),(-121.7631845,46.8555182)] # all of puget sound
+    [(-122.6126, 38.2182), (-121.7378, 37.2066)]  # SF Bay
     ]
 
 for box in bounding_boxes:
@@ -50,7 +50,7 @@ for box in bounding_boxes:
 
     # station_list = 'data/station_list' + str(NW) + str(SE) + '_10-SF.csv'
 
-    station_list = 'data/station_list_2023.csv'
+    station_list = 'data/station_list_2023_SF.csv'
 
     df = pd.DataFrame(data, columns=columns)
     print(df)
@@ -114,7 +114,7 @@ for box in bounding_boxes:
                           datetime.fromtimestamp(end_timestamp).date(), '| Status code: ', hist_response.status_code)
                 except:
                     print(str(sensor) + ": API response failed")
-                    with open('data/failfile_2023.csv','a') as out:
+                    with open('data/failfile_2023_SF.csv','a') as out:
                         out.write('API fail,',str(sensor))
             try:
                 # read hist_response
@@ -177,7 +177,7 @@ for box in bounding_boxes:
 
                 except:
                     print(str(sensor) + ": API response failed")
-                    with open('data/failfile_2023.csv','a') as out:
+                    with open('data/failfile_2023.csv_SF','a') as out:
                         out.write('fail',str(sensor))
 
             # API guidelines is hit once every 1-10min, so setting at just over a minute
@@ -195,7 +195,7 @@ print('De-duplicating')
 hist_df = hist_df.drop_duplicates(keep='first')
 
 # cleaned_filename = 'data/pa_hist_data_cleaned.parquet'
-cleaned_filename = 'data/pa_hist_data_cleaned_2023.csv'
+cleaned_filename = 'data/pa_hist_data_cleaned_2023_SF.csv'
 
 print('Writing ' + cleaned_filename)
 # pw(cleaned_filename, hist_df, compression='GZIP')
@@ -208,7 +208,7 @@ print('Extracting averages')
 avg_df = hist_df[['station_index','time_stamp','pm2.5_AVG','pm10.0_atm']]
 
 # avg_filename = 'data/pa_hist_data_avg.parquet'
-avg_filename = 'data/pa_hist_data_avg_2023.csv'
+avg_filename = 'data/pa_hist_data_avg_2023_SF.csv'
 print('Writing ' + avg_filename)
 avg_df.to_csv(avg_filename)
 # pw(avg_filename, avg_df, compression='GZIP')

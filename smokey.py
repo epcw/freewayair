@@ -2,23 +2,96 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-file = 'map/station_distance-2023.csv'
+# load purpleair data
+filename = 'map/station_distance_2023-SF.csv'
 
-df = pd.read_csv(file)
-print('Plotting AQI')
+df = pd.read_csv(filename, dtype={'station_index': str})
 
-df = df[df['pm10_0_atm'] < 500]
-# df = df[df['distance'] < 5]
-# df = df[df['date'] == ['2020-10-31']]
+# # tau calculation for pm10_0_diff
+# x = list()
+# y = list()
+#
+# h = 0.2
+# for tau in [h * (i + 1) for i in range(int((8 - 1 * h) / h + 1))]:
+#
+#     x.append(tau)
+#
+#     df = pd.read_csv(filename, dtype={'station_index': str})
+#     df_temp = df.groupby(['date']).median()[['pm10_0_atm']]
+#     df_temp = df_temp.rename(columns={'pm10_0_atm': 'pm10_0_daily_median'})
+#     df = df.merge(df_temp, how='left', on='date')
+#     df['freeway_adjacent'] = df['distance'] < tau
+#     df['pm10_0_diff'] = df['pm10_0_atm'] - df['pm10_0_daily_median']
+#
+#     ks = scipy.stats.ks_2samp(df[df['freeway_adjacent'] == True]['pm10_0_diff'],
+#                               df[df['freeway_adjacent'] == False]['pm10_0_diff'])
+#
+#     try:
+#         y.append(ks.statistic)
+#     except:
+#         print(type(ks.statistic))
+#
+#     'profit'
 
-plt.figure(figsize=(16,12))
-# sns.regplot(data=df[df['date'] == '2023-10-31'], x='distance', y='pm10_0_atm')
-sns.regplot(data=df, x='distance', y='station_median_pm10_0')
-# sns.regplot(data=df, x='distance', y='pm10_0_atm')
-# sns.regplot(data=df[df['date'] == '2020-10-31'], x='distance', y='pm2_5_AVG')
+# # raw pm10_0
+#
+# ax = sns.histplot(data=df[(df['date'] <= '2023-12-31') & (df['date'] >= '2023-01-01')],hue='freeway_adjacent', x='pm10_0_atm', binwidth=.16,cumulative=True, common_norm=False, fill=False, element='step', stat='probability')
+# ax.set_xlim(0,30)
 
+# monthly
+for i in range(12):
+    plt.figure()
+    ax = sns.histplot(
+        data=df[pd.to_datetime(df['date']).dt.month == i+1],
+        hue='freeway_adjacent',
+        x='pm10_0_diff',
+        binwidth=.16,
+        cumulative=True,
+        common_norm=False,
+        fill=False,
+        element='step',
+        stat='probability',
+        label=i+1
+    ).set(
+        title='month ' + str(i+1),
+        xlim=(-15,100)
+    )
 
-plt.savefig('distance-2023-median.png')
+# all of 2023
+plt.figure()
+ax = sns.histplot(
+    data=df,
+    hue='freeway_adjacent',
+    x='pm10_0_diff',
+    binwidth=.16,
+    cumulative=True,
+    common_norm=False,
+    fill=False,
+    element='step',
+    stat='probability'
+).set(
+    title='pm10 in 2023, for sensors +/- 1.5km from an interstate',
+    xlim=(-20,20)
+)
+
+#
+# file = 'map/station_distance-2023.csv'
+#
+# df = pd.read_csv(file)
+# print('Plotting AQI')
+#
+# df = df[df['pm10_0_atm'] < 500]
+# # df = df[df['distance'] < 5]
+# # df = df[df['date'] == ['2020-10-31']]
+#
+# plt.figure(figsize=(16,12))
+# # sns.regplot(data=df[df['date'] == '2023-10-31'], x='distance', y='pm10_0_atm')
+# sns.regplot(data=df, x='distance', y='station_median_pm10_0')
+# # sns.regplot(data=df, x='distance', y='pm10_0_atm')
+# # sns.regplot(data=df[df['date'] == '2020-10-31'], x='distance', y='pm2_5_AVG')
+#
+#
+# plt.savefig('distance-2023-median.png')
 
 # # df = pd.read_csv('data/aqi_data_stacked.csv')
 # df = pd.read_csv('map/station_list.csv')

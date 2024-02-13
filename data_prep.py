@@ -6,8 +6,8 @@ import os
 os.environ['USE_PYGEOS'] = '0'
 import csv
 
-filename = 'data/pa_hist_data_avg_2023.csv'
-station_filename = 'data/station_list_2023.csv'
+filename = 'data/pa_hist_data_avg_2023_SF.csv'
+station_filename = 'data/station_list_2023_SF.csv'
 geo_filename = 'data/washingtongeo.json'
 
 print('Loading ' + filename + ' & ' + station_filename)
@@ -38,10 +38,27 @@ d3_df.drop(d3_df[d3_df['pm10_0_atm'] >= 600].index, inplace=True)
 d3_df.dropna(subset=['pm10_0_atm'])
 
 # calculate medians
-d3_df['station_median_pm2_5'] = d3_df.groupby('station_index')['pm2_5_AVG'].transform('median')
-d3_df['station_median_pm10_0'] = d3_df.groupby('station_index')['pm10_0_atm'].transform('median')
+d3_df['pm2_5_station_median'] = d3_df.groupby('station_index')['pm2_5_AVG'].transform('median')
+d3_df['pm10_0_station_median'] = d3_df.groupby('station_index')['pm10_0_atm'].transform('median')
 
-d3_filename = 'map/station_list_2023.csv'
+df_daily = d3_df.groupby(['date']).median()[['pm10_0_atm']]
+df_daily = df_daily.rename(columns={'pm10_0_atm': 'pm10_0_daily_median'})
+d3_df = d3_df.merge(df_daily, how='left', on='date')
+d3_df['pm10_0_diff'] = d3_df['pm10_0_atm'] - d3_df['pm10_0_daily_median']
+
+df_daily2 = d3_df.groupby(['date']).median()[['pm2_5_AVG']]
+df_daily2 = df_daily2.rename(columns={'pm2_5_AVG': 'pm2_5_daily_median'})
+d3_df = d3_df.merge(df_daily2, how='left', on='date')
+d3_df['pm2_5_diff'] = d3_df['pm2_5_AVG'] - d3_df['pm2_5_daily_median']
+
+# bring in distance data (if already exists and are just re-running this on a known set of stations
+df_distance = pd.read_csv('map/station_distance_2023-SF.csv')
+df_distance = df_distance[['station_index','way','distance']].drop_duplicates()
+d3_df = d3_df.merge(df_distance, how='left', on='station_index')
+d3_df['freeway_adjacent'] = d3_df['distance'] < 1.5
+
+# save outfile
+d3_filename = 'map/station_distance_2023-SF.csv'
 d3_df.to_csv(d3_filename, index=False, quotechar='"', quoting=csv.QUOTE_NONE)
 
 # wa_shp = gpd.read_file(geo_filename)

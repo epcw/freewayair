@@ -17,6 +17,7 @@ df = pd.read_csv(df_filename, dtype={'station_index': str})
 # df_halloween = df[df['date'] == '2023-10-31']
 
 # Motorways within the Purple Air bounding box
+# Die Bundesautobahnen Amerikanen
 result = overpass.query('way["highway"="motorway"](46.8555182, -122.755863, 48.1162201, -121.7631845); out geom;') # Northern WA
 # result = overpass.query('way["highway"="motorway"](37.2066, -122.6126, 38.2182, -121.7378); out geom;') # SF Bay
 result_t = overpass.query('way["highway"="trunk"](46.8555182, -122.755863, 48.1162201, -121.7631845); out geom;') # Northern WA
@@ -57,17 +58,18 @@ for way, data in interstates.items():
             way_coordinates.append((lat, lon))
 
         name = data['tags'].get('ref')
-    #     print(name)
+        print('This is the Way: ', name)
 
     #     folium.PolyLine(way_coordinates, tooltip=f"I-? {way}").add_to(m)
         folium.PolyLine(way_coordinates, tooltip=name).add_to(m)
     except:
+        print("no way!")
         pass
 
 # TIME STEP VERSION
 timelist_tempo = []
-
-df['weight'] = df['pm10_0_atm'] / 500
+# Min-Max Normalization
+df['weight'] = (df['pm10_0_atm']-df['pm10_0_atm'].min())/(df['pm10_0_atm'].max()-df['pm10_0_atm'].min())
 
 weight_list = []
 # for x in df['date']:
@@ -81,7 +83,8 @@ for x in df['date'].sort_values().unique():
 
     timelist_tempo.append(x)
 
-folium.plugins.HeatMapWithTime(weight_list, radius=30,index=timelist_tempo,auto_play=True, max_opacity=.7, min_speed=1,index_steps=1).add_to(m)
+folium.plugins.HeatMapWithTime(weight_list, radius=50,index=timelist_tempo,
+                               gradient={0.1: 'blue',0.25:'green',0.59: 'yellow',0.75: 'orange', 0.9: 'red'},auto_play=True, max_opacity=.7, min_speed=1,index_steps=1).add_to(m)
 
 # # MARKER VERSION
 # # create stations df

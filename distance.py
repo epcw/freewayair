@@ -7,22 +7,22 @@ from shapely.geometry import Polygon, LineString, Point
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# # SF Bay
-# West = '-122.6126'
-# North = '38.2182'
-# East = '-121.7378'
-# South = '37.2066'
+# SF Bay
+West = '-122.6126'
+North = '38.2182'
+East = '-121.7378'
+South = '37.2066'
 
-# Puget Sound
-West = '-122.755863'
-North = '48.1162201'
-East = '-121.7631845'
-South = '46.8555182'
+# # Puget Sound
+# West = '-122.755863'
+# North = '48.1162201'
+# East = '-121.7631845'
+# South = '46.8555182'
 
 overpass = Overpass()
 
-filename = 'map/station_list_2023.csv'
-# filename = 'map/station_list_10-SF.csv'
+# filename = 'map/station_list_2023.csv'
+filename = 'map/station_list_2023_SF.csv'
 
 print('Loading in station data')
 
@@ -164,8 +164,8 @@ for i, row in df_station_locations.iterrows():
 
     point = Point(row['longitude'], row['latitude'])
     stations_gdf = gpd.GeoDataFrame({'geometry': [point,]}, crs='EPSG:4326')
-    stations_gdf = stations_gdf.to_crs('EPSG:6596') # Northern WA
-    # stations_gdf = stations_gdf.to_crs('EPSG:7131') # SF Bay
+    # stations_gdf = stations_gdf.to_crs('EPSG:6596') # Northern WA
+    stations_gdf = stations_gdf.to_crs('EPSG:7131') # SF Bay
 
     for way, item in interstates.items():
         #print(way, item['geometry']['coordinates'])
@@ -178,8 +178,8 @@ for i, row in df_station_locations.iterrows():
                 crs='EPSG:4326'
             )
 
-            segments_df = segments_df.to_crs('EPSG:6596') # Northern WA
-            # segments_df = segments_df.to_crs('EPSG:7131')  # SF Bay
+            # segments_df = segments_df.to_crs('EPSG:6596') # Northern WA
+            segments_df = segments_df.to_crs('EPSG:7131')  # SF Bay
             dist = segments_df.distance(stations_gdf)[0]/1000.0
 
             station_distance_df[station_index].append(
@@ -213,16 +213,16 @@ nearest_df = nearest_df.rename(columns={'index':'station_index'})
 
 merged_df = df.merge(nearest_df, how='left', on='station_index')
 
-# outfile = 'map/station_distance-SF.csv'
-outfile = 'map/station_distance-2023.csv'
+outfile = 'map/station_distance_2023-SF.csv'
+# outfile = 'map/station_distance-2023.csv'
 
 print('writing ' + outfile)
 
 merged_df.to_csv(outfile)
-print('Plotting AQI')
-
-
-plt.figure(figsize=(16,12))
-sns.scatterplot(data=merged_df[merged_df['date'] == '2020-10-31'], x='distance', y='pm2_5_AVG')
-
-plt.savefig('distance.png')
+# print('Plotting AQI')
+#
+#
+# plt.figure(figsize=(16,12))
+# sns.scatterplot(data=merged_df[merged_df['date'] == '2020-10-31'], x='distance', y='pm2_5_AVG')
+#
+# plt.savefig('distance.png')
