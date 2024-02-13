@@ -4,8 +4,7 @@ import re
 from OSMPythonTools.overpass import Overpass
 import geopandas as gpd
 from shapely.geometry import Polygon, LineString, Point
-import matplotlib.pyplot as plt
-import seaborn as sns
+from timeit import default_timer as timer
 
 # SF Bay
 West = '-122.6126'
@@ -155,10 +154,11 @@ station_distance_df = dict()
 print('Calculating distances')
 
 for i, row in df_station_locations.iterrows():
+    start = timer()
 
     station_index = row['station_index']
 
-    print('station: ' + station_index)
+    # print('station: ' + station_index)
 
     station_distance_df[station_index] = list()
 
@@ -191,6 +191,8 @@ for i, row in df_station_locations.iterrows():
             )
         except:
             pass
+    end = timer()
+    print('station: ' + station_index + ' | calc time: ', end - start,'s')
 def f(x):
     return(x['distance'])
 
