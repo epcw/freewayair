@@ -43,7 +43,7 @@ for i in range(12):
     plt.figure()
     ax = sns.histplot(
         data=df[pd.to_datetime(df['date']).dt.month == i+1],
-        hue='freeway_adjacent',
+        hue='freeway_adjacent_1_5',
         x='pm10_0_diff',
         binwidth=.16,
         cumulative=True,
@@ -56,12 +56,14 @@ for i in range(12):
         title='month ' + str(i+1),
         xlim=(-15,100)
     )
+    fname = '2023-'+str(i+1)+'curve.png'
+    plt.savefig(fname)
 
 # all of 2023
 plt.figure()
 ax = sns.histplot(
     data=df,
-    hue='freeway_adjacent',
+    hue='freeway_adjacent_1_5',
     x='pm10_0_diff',
     binwidth=.16,
     cumulative=True,
@@ -73,6 +75,7 @@ ax = sns.histplot(
     title='pm10 in 2023, for sensors +/- 1.5km from an interstate',
     xlim=(-20,20)
 )
+plt.savefig('2023-curve-SF.png')
 
 #
 # file = 'map/station_distance-2023.csv'
