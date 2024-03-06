@@ -85,41 +85,71 @@ for box in bounding_boxes:
         end_timestamp = 1704095999
 
 
-        if (start_timestamp <= created <= end_timestamp) or (start_timestamp <= ended <= end_timestamp):
-            print('    ____________','\nSensor: ',name,' (',sensor,')')
-            print('Active from ', datetime.fromtimestamp(created).date(),' to ',datetime.fromtimestamp(ended).date())
+        # if (start_timestamp <= created <= end_timestamp) or (start_timestamp <= ended <= end_timestamp):
+        print('    ____________','\nSensor: ',name,' (',sensor,')')
+        print('Active from ', datetime.fromtimestamp(created).date(),' to ',datetime.fromtimestamp(ended).date())
 
-            # Start at the created date, then pull one year at a time until you hit today
-            # for x in range(created, ended, unix_year):
-            #     start_timestamp = x
-            #     if (x + unix_year) < ended:
-            #         end_timestamp = x + unix_year
-            #     else:
-            #         end_timestamp = ended
+        # Start at the created date, then pull one year at a time until you hit today
+        # for x in range(created, ended, unix_year):
+        #     start_timestamp = x
+        #     if (x + unix_year) < ended:
+        #         end_timestamp = x + unix_year
+        #     else:
+        #         end_timestamp = ended
 
 
-            # construct URL for API pull
-            # hist_url = 'https://api.purpleair.com/v1/sensors/' + str(sensor) + '/history?start_timestamp=' + str(start_timestamp) + '&end_timestamp=' + str(end_timestamp) + '&average=1440&fields=pm2.5_alt%2C%20pm2.5_alt_a%2C%20pm2.5_alt_b%2C%20pm2.5_atm%2C%20pm2.5_atm_a%2C%20pm2.5_atm_b%2C%20pm2.5_cf_1%2C%20pm2.5_cf_1_a%2C%20pm2.5_cf_1_b'
-            hist_url = 'https://api.purpleair.com/v1/sensors/' + str(sensor) + '/history?start_timestamp=' + str(start_timestamp) + '&end_timestamp=' + str(end_timestamp) + '&average=1440&fields=pm2.5_alt%2C%20pm2.5_atm%2C%20pm10.0_atm' # Modified - you don't really need the individual channels but the avg, and ATM & ALT are better for outside than CF_1
+        # construct URL for API pull
+        # hist_url = 'https://api.purpleair.com/v1/sensors/' + str(sensor) + '/history?start_timestamp=' + str(start_timestamp) + '&end_timestamp=' + str(end_timestamp) + '&average=1440&fields=pm2.5_alt%2C%20pm2.5_alt_a%2C%20pm2.5_alt_b%2C%20pm2.5_atm%2C%20pm2.5_atm_a%2C%20pm2.5_atm_b%2C%20pm2.5_cf_1%2C%20pm2.5_cf_1_a%2C%20pm2.5_cf_1_b'
+        hist_url = 'https://api.purpleair.com/v1/sensors/' + str(sensor) + '/history?start_timestamp=' + str(start_timestamp) + '&end_timestamp=' + str(end_timestamp) + '&average=1440&fields=pm2.5_alt%2C%20pm2.5_atm%2C%20pm10.0_atm' # Modified - you don't really need the individual channels but the avg, and ATM & ALT are better for outside than CF_1
 
-            # request from API
+        # request from API
+        try:
+            hist_response = requests.get(hist_url, headers=headers)
+            print('Pull from ',datetime.fromtimestamp(start_timestamp).date(),' to ',datetime.fromtimestamp(end_timestamp).date(),'| Status code: ', hist_response.status_code)
+        except:
             try:
+                sleep(62)
                 hist_response = requests.get(hist_url, headers=headers)
-                print('Pull from ',datetime.fromtimestamp(start_timestamp).date(),' to ',datetime.fromtimestamp(end_timestamp).date(),'| Status code: ', hist_response.status_code)
+                print('Pull from ', datetime.fromtimestamp(start_timestamp).date(), ' to ',
+                      datetime.fromtimestamp(end_timestamp).date(), '| Status code: ', hist_response.status_code)
             except:
-                try:
-                    sleep(62)
-                    hist_response = requests.get(hist_url, headers=headers)
-                    print('Pull from ', datetime.fromtimestamp(start_timestamp).date(), ' to ',
-                          datetime.fromtimestamp(end_timestamp).date(), '| Status code: ', hist_response.status_code)
-                except:
-                    print(str(sensor) + ": API response failed")
-                    with open('data/failfile_2023_SF.csv','a') as out:
-                        out.write('API fail,',str(sensor))
+                print(str(sensor) + ": API response failed")
+                with open('data/failfile_2023_SF.csv','a') as out:
+                    out.write('API fail,',str(sensor))
+        try:
+            # read hist_response
+            hist_content = json.loads(hist_response.content)
+            # print(hist_content) #testing
+            # pull out data & field names
+            hist_data = hist_content["data"]
+            hist_columns = hist_content["fields"]
+
+            # dump to dataframe
+            temp_df = pd.DataFrame(hist_data, columns=hist_columns)
+
+            # add in station_index
+            temp_df.insert(0,'station_index',sensor)
+
+            # calculate average
+            print('Calculating pm2.5 avg')
+            temp_df['pm2_5_AVG'] = (temp_df['pm2_5_alt'] + temp_df['pm2_5_atm']) / 2
+
+            print('Rounding to 1 decimal place')
+            temp_df = temp_df.round(decimals=1)
+
+            # append to the bottom of hist_df
+            hist_df = pd.concat([hist_df, temp_df])
+
+            print(temp_df)
+
+            # dump to csv (parquet is better but can't append)
+            hist_df.to_csv(hist_filename, mode='a', header='False')
+            # hist_df.to_parquet(hist_filename, engine='fastparquet', append=True)
+        except:
             try:
                 # read hist_response
                 hist_content = json.loads(hist_response.content)
-                # print(hist_content) #testing
+
                 # pull out data & field names
                 hist_data = hist_content["data"]
                 hist_columns = hist_content["fields"]
@@ -128,62 +158,32 @@ for box in bounding_boxes:
                 temp_df = pd.DataFrame(hist_data, columns=hist_columns)
 
                 # add in station_index
-                temp_df.insert(0,'station_index',sensor)
+                temp_df.insert(0, 'station_index', sensor)
 
                 # calculate average
                 print('Calculating pm2.5 avg')
-                temp_df['pm2.5_AVG'] = (temp_df['pm2.5_alt'] + temp_df['pm2.5_atm']) / 2
+                temp_df['pm2_5_AVG'] = (temp_df['pm2_5_alt'] + temp_df['pm2_5_atm'])/2
 
                 print('Rounding to 1 decimal place')
                 temp_df = temp_df.round(decimals=1)
 
                 # append to the bottom of hist_df
                 hist_df = pd.concat([hist_df, temp_df])
-
                 print(temp_df)
 
-                # dump to csv (parquet is better but can't append)
+                # dump to csv(parquet is better but cannot append)
                 hist_df.to_csv(hist_filename, mode='a', header='False')
                 # hist_df.to_parquet(hist_filename, engine='fastparquet', append=True)
+
             except:
-                try:
-                    # read hist_response
-                    hist_content = json.loads(hist_response.content)
+                print(str(sensor) + ": API response failed")
+                with open('data/failfile_2023.csv_SF','a') as out:
+                    out.write('fail',str(sensor))
 
-                    # pull out data & field names
-                    hist_data = hist_content["data"]
-                    hist_columns = hist_content["fields"]
-
-                    # dump to dataframe
-                    temp_df = pd.DataFrame(hist_data, columns=hist_columns)
-
-                    # add in station_index
-                    temp_df.insert(0, 'station_index', sensor)
-
-                    # calculate average
-                    print('Calculating pm2.5 avg')
-                    temp_df['pm2.5_AVG'] = (temp_df['pm2.5_alt'] + temp_df['pm2.5_atm'])/2
-
-                    print('Rounding to 1 decimal place')
-                    temp_df = temp_df.round(decimals=1)
-
-                    # append to the bottom of hist_df
-                    hist_df = pd.concat([hist_df, temp_df])
-                    print(temp_df)
-
-                    # dump to csv(parquet is better but cannot append)
-                    hist_df.to_csv(hist_filename, mode='a', header='False')
-                    # hist_df.to_parquet(hist_filename, engine='fastparquet', append=True)
-
-                except:
-                    print(str(sensor) + ": API response failed")
-                    with open('data/failfile_2023.csv_SF','a') as out:
-                        out.write('fail',str(sensor))
-
-            # API guidelines is hit once every 1-10min, so setting at just over a minute
-            sleep(62)
-        else:
-            pass
+        # API guidelines is hit once every 1-10min, so setting at just over a minute
+        sleep(62)
+        # else:
+        #     pass
 
 # only necessary if not scraping
 # print('Loading ' + hist_filename)
@@ -205,7 +205,7 @@ hist_df.to_csv(cleaned_filename)
 
 # remove all the duplicate column heading rows (this works ASSUMING that all temp_dfs are exactly the same shape and pull the same data in the same order.  Be careful changing the loop above.
 print('Extracting averages')
-avg_df = hist_df[['station_index','time_stamp','pm2.5_AVG','pm10.0_atm']]
+avg_df = hist_df[['station_index','time_stamp','pm2_5_AVG','pm10_0_atm']]
 
 # avg_filename = 'data/pa_hist_data_avg.parquet'
 avg_filename = 'data/pa_hist_data_avg_2023_SF.csv'

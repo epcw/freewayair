@@ -173,3 +173,9 @@ cython_debug/
 /.idea/inspectionProfiles/profiles_settings.xml
 /.idea/vcs.xml
 /map/station_list_test.csv
+/map/station_distance_2023-SF-combined.csv
+/map/station_distance_2023-SF-test.csv
+/map/station_distance_2023-SF_missing-test.csv
+/map/station_list_2023-test.csv
+/map/station_list_2023_SF-test.csv
+/map/station_list_2023_SF.csv

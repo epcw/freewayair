@@ -16,12 +16,13 @@ headers= {'X-API-Key': api}
 bounding_boxes = [
     # [(-122.287065,47.574967),(-122.245523,47.506096)],  # rainier beach / valley
     # [(-122.247872,47.64417),(-122.192917,47.598775)]   # bellvue
-    # [(-122.755863,48.1162201),(-121.7631845,46.8555182)] # all of puget sound
-    [(-122.6126, 38.2182), (-121.7378, 37.2066)]  # SF Bay
+    [(-122.755863,48.1162201),(-121.7631845,46.8555182)] # all of puget sound
+    # [(-122.6126, 38.2182), (-121.7378, 37.2066)]  # SF Bay
     ]
 
 missing_hist_df = pd.DataFrame(columns=['', 'station_index', 'time_stamp', 'pm2.5_alt', 'pm2.5_atm', 'pm2.5_AVG', 'pm10.0_atm'])
-missing_hist_filename = 'data/pa_hist_data_2023_missing_SF.csv'
+# missing_hist_filename = 'data/pa_hist_data_2023_missing_SF.csv'
+missing_hist_filename = 'data/pa_hist_data_2023_missing.csv'
 
 for box in bounding_boxes:
     NW = box[0]
@@ -34,8 +35,8 @@ for box in bounding_boxes:
     print('SE = ',SElng,',',SElat)
 
     # load in list of stations
-    station_list = 'data/station_list_2023_SF.csv'
-    # station_list = 'data/station_list_2023.csv'
+    # station_list = 'data/station_list_2023_SF.csv'
+    station_list = 'data/station_list_2023.csv'
     df = pd.read_csv(station_list, dtype={'sensor_index': str})
     stations = list()
     for station in df['sensor_index'].items():
@@ -56,8 +57,9 @@ for box in bounding_boxes:
             missing_stations.append(i)
 
     missing_df = df[(df['sensor_index'].isin(missing_stations))]
+    missing_df.to_csv('data/station_list_2023-missing.csv')
 
-    missing_df.to_csv('data/station_list_2023-SF-missing.csv')
+    # missing_df.to_csv('data/station_list_2023-SF-missing.csv')
     # needed to walk the url request year by year
     unix_year = 31556926
     # today = int(time.time()) # kinda redundant now that I'm only pulling to end date
@@ -107,7 +109,7 @@ for box in bounding_boxes:
                       datetime.fromtimestamp(end_timestamp).date(), '| Status code: ', hist_response.status_code)
             except:
                 print(str(sensor) + ": API response failed")
-                with open('data/failfile_2023_SF.csv','a') as out:
+                with open('data/failfile_2023.csv','a') as out:
                     out.write('API fail,',str(sensor) + '\n')
         try:
             # read hist_response
@@ -119,7 +121,7 @@ for box in bounding_boxes:
 
             if len(hist_data) == 0:
                 print(str(sensor) + ": Data package empty")
-                with open('data/failfile_2023_SF.csv', 'a') as out:
+                with open('data/failfile_2023.csv', 'a') as out:
                     out.write('empty data,' + str(sensor) + '\n')
             else:
                 # dump to dataframe
@@ -154,7 +156,7 @@ for box in bounding_boxes:
 
                 if len(hist_data) == 0:
                     print(str(sensor) + ": Data package empty")
-                    with open('data/failfile_2023_SF.csv', 'a') as out:
+                    with open('data/failfile_2023.csv', 'a') as out:
                         out.write('empty data,' + str(sensor) + '\n')
                 else:
                     # dump to dataframe
@@ -180,7 +182,7 @@ for box in bounding_boxes:
 
             except:
                 print(str(sensor) + ": API response failed")
-                with open('data/failfile_2023_SF.csv','a') as out:
+                with open('data/failfile_2023.csv','a') as out:
                     out.write('fail,' + str(sensor) + '\n')
 
         # API guidelines is hit once every 1-10min, so setting at just over a minute
@@ -195,13 +197,41 @@ for box in bounding_boxes:
 
 # remove all the duplicate column heading rows (this works ASSUMING that all temp_dfs are exactly the same shape and pull the same data in the same order.  Be careful changing the loop above.
 print('De-duplicating')
-missing_hist_df = missing_hist_df.drop_duplicates(keep='first')
+# missing_hist_df = missing_hist_df.drop_duplicates(keep='first')
 
-cleaned_filename = 'data/pa_hist_data_cleaned_2023_SF_missing.csv'
-# cleaned_filename = 'data/pa_hist_data_cleaned_2023_missing.csv'
+# cleaned_filename = 'data/pa_hist_data_cleaned_2023_SF_missing.csv'
+cleaned_filename = 'data/pa_hist_data_cleaned_2023_missing.csv'
 
 print('Writing ' + cleaned_filename)
 missing_hist_df.to_csv(cleaned_filename)
+# missing_hist_df = pd.read_csv(cleaned_filename, dtype={'station_index':str}) # to repair an existing
+
+try:
+    missing_hist_df = missing_hist_df.loc[: ,~missing_hist_df.columns.str.contains('Unnamed', case=False)]
+except:
+    pass
+
+missing_hist_df = missing_hist_df[['station_index','time_stamp','pm2.5_AVG','pm10.0_atm']]
+missing_hist_df = missing_hist_df.rename(columns={"pm2.5_AVG": "pm2_5_AVG","pm10.0_atm":"pm10_0_atm"}) # this is so D3 doesn't go nuts on the decimal point
+missing_hist_df['date'] = pd.to_datetime(missing_hist_df['time_stamp'], unit='s')
+missing_hist_df['date'] = missing_hist_df['date'].dt.date
+missing_hist_df = missing_hist_df.sort_values(by=['date','station_index']) # so you can see the bounds
+missing_hist_df = missing_hist_df.drop('time_stamp', axis=1)
+missing_hist_df['station_index'] = missing_hist_df['station_index'].astype(str)
+
+# station_filename = 'data/station_list_2023_SF.csv'
+station_filename = 'data/station_list_2023.csv'
+
+df_stations = pd.read_csv(station_filename, dtype={'sensor_index': str})
+df_stations_temp = df_stations[['sensor_index','name','latitude','longitude','altitude']]
+df_stations_temp = df_stations_temp.rename(columns={"sensor_index": "station_index"})
+
+missing_hist_df = missing_hist_df.merge(df_stations_temp, how='left', on='station_index')
+missing_hist_df.name.replace(',',' ',regex=True,inplace=True)
+missing_hist_df.drop(missing_hist_df[missing_hist_df['pm2_5_AVG'] >= 600].index, inplace=True)
+missing_hist_df.drop(missing_hist_df[missing_hist_df['pm10_0_atm'] >= 600].index, inplace=True)
+missing_hist_df['pm2_5_station_median'] = missing_hist_df.groupby('station_index')['pm2_5_AVG'].transform('median')
+missing_hist_df['pm10_0_station_median'] = missing_hist_df.groupby('station_index')['pm10_0_atm'].transform('median')
 
 # # remove all the duplicate column heading rows (this works ASSUMING that all temp_dfs are exactly the same shape and pull the same data in the same order.  Be careful changing the loop above.
 # print('Extracting averages')
@@ -213,7 +243,27 @@ missing_hist_df.to_csv(cleaned_filename)
 # missing_avg_df.to_csv(missing_avg_filename)
 
 # append to existing
-main_df = pd.read_csv('map/station_list_2023_SF.csv')
-combo_df = pd.concat([main_df, missing_hist_df]).drop_duplicates()
-combo_df.to_csv('map/station_list_2023_SF.csv')
+# main_df = pd.read_csv('map/station_list_2023_SF.csv')
+main_df = pd.read_csv('map/station_list_2023.csv')
+try:
+    main_df = main_df.loc[: ,~main_df.columns.str.contains('Unnamed', case=False)]
+except:
+    pass
+try:
+    main_df = main_df.rename(columns={'station_median_pm2_5': 'pm2_5_station_median','station_median_pm10_0': 'pm10_0_station_median'})
+except:
+    pass
 
+combo_df = pd.concat([main_df, missing_hist_df]).drop_duplicates()
+df_daily = combo_df.groupby(['date']).median()[['pm10_0_atm']]
+df_daily = df_daily.rename(columns={'pm10_0_atm': 'pm10_0_daily_median'})
+combo_df = combo_df.merge(df_daily, how='left', on='date')
+combo_df['pm10_0_diff'] = combo_df['pm10_0_atm'] - combo_df['pm10_0_daily_median']
+df_daily2 = combo_df.groupby(['date']).median()[['pm2_5_AVG']]
+df_daily2 = df_daily2.rename(columns={'pm2_5_AVG': 'pm2_5_daily_median'})
+combo_df = combo_df.merge(df_daily2, how='left', on='date')
+combo_df['pm2_5_diff'] = combo_df['pm2_5_AVG'] - combo_df['pm2_5_daily_median']
+
+
+combo_df.to_csv('map/station_list_2023-combined.csv')
+# combo_df.to_csv('map/station_list_2023_SF.csv')
