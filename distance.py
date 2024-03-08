@@ -35,6 +35,8 @@ df_station_locations['trunc_lon'] = df_station_locations['longitude'].round(1)
 
 trunc_list = list(zip(df_station_locations['trunc_lat'], df_station_locations['trunc_lon']))
 
+trunc_list = list(dict.fromkeys(trunc_list)) # de-duplicate the truncated lat/lon pairs
+
 temp_df = pd.DataFrame(columns=['station_index','way','distance'])
 
 for i in trunc_list:
@@ -144,7 +146,7 @@ for i in trunc_list:
             except:
                 pass
         end = timer()
-        print('station: ' + station_index + ' | calc time: ', end - start,'s')
+        print('station: ' + station_index + ' | calc time: ' + str(end - start) + 's')
     def f(x):
         return(x['distance'])
 
@@ -162,8 +164,8 @@ for i in trunc_list:
     except:
         for i, item in station_distance_df.items():
             nearest[i] = np.nan
-    # for i, item in nearest.items():
-        # print(i, item['way'], item['distance'])
+    for i, item in nearest.items():
+        print('Nearest way to station', i +':',item['way'],'| Distance:', str(item['distance'])+'km')
 
     nearest_df = pd.DataFrame.from_dict(nearest, orient='index').reset_index()
     nearest_df = nearest_df.rename(columns={'index':'station_index'})

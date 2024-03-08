@@ -6,12 +6,12 @@ from OSMPythonTools.overpass import Overpass
 import geopandas as gpd
 from shapely.geometry import Polygon, LineString, Point
 from timeit import default_timer as timer
-
-# SF Bay
-West = '-122.6126'
-North = '38.2182'
-East = '-121.7378'
-South = '37.2066'
+#
+# # SF Bay
+# West = '-122.6126'
+# North = '38.2182'
+# East = '-121.7378'
+# South = '37.2066'
 
 # # Puget Sound
 # West = '-122.755863'
@@ -27,14 +27,15 @@ print('Loading in station data')
 station_list = 'map/station_list_2023_SF.csv'
 # station_list = 'data/station_list_2023.csv'
 df = pd.read_csv(station_list, dtype={'station_index': str})
+df_stations = df.drop_duplicates(subset=['station_index'])
 stations = list()
-for station in df['station_index'].items():
+for station in df_stations['station_index'].items():
     stations.append(station[1])
 
 hist_stations = list()
 hist_list = 'map/station_distance_2023-SF.csv'
 # hist_list = 'map/station_distance_2023.csv'
-hist_df = pd.read_csv(hist_list, dtype={'station_index': str}).drop_duplicates(['station_index'])
+hist_df = pd.read_csv(hist_list, dtype={'station_index': str}).drop_duplicates(subset=['station_index'])
 for station in hist_df['station_index'].items():
     hist_stations.append(station[1])
 
@@ -52,6 +53,8 @@ df_station_locations['trunc_lat'] = df_station_locations['latitude'].round(1)
 df_station_locations['trunc_lon'] = df_station_locations['longitude'].round(1)
 
 trunc_list = list(zip(df_station_locations['trunc_lat'], df_station_locations['trunc_lon']))
+
+trunc_list = list(dict.fromkeys(trunc_list)) # de-duplicate the truncated lat/lon pairs
 
 temp_df = pd.DataFrame(columns=['station_index','way','distance'])
 
@@ -162,7 +165,7 @@ for i in trunc_list:
             except:
                 pass
         end = timer()
-        print('station: ' + station_index + ' | calc time: ', end - start,'s')
+        print('station: ' + station_index + ' | calc time: ' + str(end - start) + 's')
     def f(x):
         return(x['distance'])
 
@@ -180,8 +183,8 @@ for i in trunc_list:
     except:
         for i, item in station_distance_df.items():
             nearest[i] = np.nan
-    # for i, item in nearest.items():
-        # print(i, item['way'], item['distance'])
+    for i, item in nearest.items():
+        print('Nearest way to station', i +':',item['way'],'| Distance:', str(item['distance'])+'km')
 
     nearest_df = pd.DataFrame.from_dict(nearest, orient='index').reset_index()
     nearest_df = nearest_df.rename(columns={'index':'station_index'})
@@ -215,15 +218,15 @@ except:
     pass
 
 # outfile = 'map/station_distance_2023-SF_missing-test.csv'
-outfile = 'map/station_distance-2023-SF.csv'
+outfile = 'map/station_distance-2023-SF-missing.csv'
 
 print('writing ' + outfile)
 
 missing_df.to_csv(outfile)
 
-distance_df = pd.read_csv(hist_list, dtype={'station_index': str})
+# distance_df = pd.read_csv(hist_list, dtype={'station_index': str})
 
-distance_df = pd.concat([distance_df, missing_df]).drop_duplicates()
+distance_df = pd.concat([hist_df, missing_df]).drop_duplicates()
 
 try:
     distance_df = distance_df.loc[: ,~distance_df.columns.str.contains('Unnamed', case=False)]
