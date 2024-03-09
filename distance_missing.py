@@ -57,6 +57,8 @@ trunc_list = list(zip(df_station_locations['trunc_lat'], df_station_locations['t
 trunc_list = list(dict.fromkeys(trunc_list)) # de-duplicate the truncated lat/lon pairs
 
 temp_df = pd.DataFrame(columns=['station_index','way','distance'])
+tempfile = 'map/distances_2023_temp.csv'
+temp_df.to_csv(tempfile)
 
 for i in trunc_list:
     center_lat = i[0]
@@ -188,18 +190,23 @@ for i in trunc_list:
 
     nearest_df = pd.DataFrame.from_dict(nearest, orient='index').reset_index()
     nearest_df = nearest_df.rename(columns={'index':'station_index'})
+    nearest_df.to_csv(tempfile, mode='a', header=False)
 
-    temp_df = pd.concat([temp_df,nearest_df]).drop_duplicates()
+    # temp_df = pd.concat([temp_df,nearest_df]).drop_duplicates()
 
 # de-dupe for stations that show up in 2 bounding boxes, to take the lower of the two distances.
-temp_df = temp_df.groupby('station_index').min('distance')
+# temp_df = temp_df.groupby('station_index').min('distance')
+temp_df = pd.read_csv(tempfile, dtype={'station_index': str})
 
-missing_station_list = missing_df[['station_index']].drop_duplicates()
-missing_station_list = missing_station_list.merge(temp_df, how='left', on='station_index')
-
-missing_df = missing_df.merge(missing_station_list, how='left', on='station_index')
 try:
-    missing_df = missing_df.loc[: ,~df.columns.str.contains('Unnamed', case=False)]
+    temp_df = temp_df.loc[: ,~temp_df.columns.str.contains('Unnamed', case=False)]
+except:
+    pass
+
+missing_df = missing_df.merge(temp_df, how='left', on='station_index')
+
+try:
+    missing_df = missing_df.loc[: ,~missing_df.columns.str.contains('Unnamed', case=False)]
 except:
     pass
 
@@ -212,6 +219,14 @@ missing_df['freeway_adjacent_3_0'] = missing_df['distance'] < 3
 missing_df['freeway_adjacent_3_5'] = missing_df['distance'] < 3.5
 missing_df['freeway_adjacent_4_0'] = missing_df['distance'] < 4
 
+df_daily2 = missing_df.groupby(['date']).median()[['pm2_5_AVG']]
+df_daily2 = df_daily2.rename(columns={'pm2_5_AVG': 'pm2_5_daily_median'})
+missing_df = missing_df.merge(df_daily2, how='left', on='date')
+
+df_daily = missing_df.groupby(['date']).median()[['pm10_0_atm']]
+df_daily = df_daily.rename(columns={'pm10_0_atm': 'pm10_0_daily_median'})
+missing_df = missing_df.merge(df_daily, how='left', on='date')
+#
 try:
     missing_df = missing_df.loc[: ,~missing_df.columns.str.contains('Unnamed', case=False)]
 except:

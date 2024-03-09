@@ -179,3 +179,5 @@ cython_debug/
 /map/station_list_2023-test.csv
 /map/station_list_2023_SF-test.csv
 /map/station_list_2023_SF.csv
+/map/distances_2023_temp.csv
+/map/station_distance-2023-SF-missing.csv

@@ -36,8 +36,10 @@ df_station_locations['trunc_lon'] = df_station_locations['longitude'].round(1)
 trunc_list = list(zip(df_station_locations['trunc_lat'], df_station_locations['trunc_lon']))
 
 trunc_list = list(dict.fromkeys(trunc_list)) # de-duplicate the truncated lat/lon pairs
+tempfile = 'map/distances_2023_temp.csv'
 
 temp_df = pd.DataFrame(columns=['station_index','way','distance'])
+temp_df.to_csv(tempfile)
 
 for i in trunc_list:
     center_lat = i[0]
@@ -169,11 +171,13 @@ for i in trunc_list:
 
     nearest_df = pd.DataFrame.from_dict(nearest, orient='index').reset_index()
     nearest_df = nearest_df.rename(columns={'index':'station_index'})
+    nearest_df.to_csv(tempfile, mode='a', header=False)
 
-    temp_df = pd.concat([temp_df,nearest_df]).drop_duplicates()
+    # temp_df = pd.concat([temp_df,nearest_df]).drop_duplicates()
 
 # de-dupe for stations that show up in 2 bounding boxes, to take the lower of the two distances.
-temp_df = temp_df.groupby('station_index').min('distance')
+# temp_df = temp_df.groupby('station_index').min('distance')
+temp_df = pd.read_csv(tempfile, dtype={'station_index':str})
 
 df = df.merge(temp_df, how='left', on='station_index')
 try:
