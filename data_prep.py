@@ -6,9 +6,9 @@ import os
 os.environ['USE_PYGEOS'] = '0'
 import csv
 
-filename = 'data/pa_hist_data_avg_2023_SF.csv'
-station_filename = 'data/station_list_2023_SF.csv'
-geo_filename = 'data/washingtongeo.json'
+filename = 'data/pa_hist_data_avg_alaskan-way-tunnel.csv'
+station_filename = 'data/station_list_alaskan-way-tunnel.csv'
+# geo_filename = 'data/washingtongeo.json'
 
 print('Loading ' + filename + ' & ' + station_filename)
 # parqf = pf(filename)
@@ -18,8 +18,8 @@ df_stations = pd.read_csv(station_filename)
 
 df_stations_temp = df_stations[['sensor_index','name','latitude','longitude','altitude']]
 df_stations_temp = df_stations_temp.rename(columns={"sensor_index": "station_index"})
-df_temp = df[['station_index','time_stamp','pm2.5_AVG','pm10.0_atm']]
-df_temp = df_temp.rename(columns={"pm2.5_AVG": "pm2_5_AVG","pm10.0_atm":"pm10_0_atm"}) # this is so D3 doesn't go nuts on the decimal point
+df_temp = df[['station_index','time_stamp','pm2_5_AVG','pm10.0_atm']]
+df_temp = df_temp.rename(columns={"pm10.0_atm":"pm10_0_atm"}) # this is so D3 doesn't go nuts on the decimal point
 df_temp['date'] = pd.to_datetime(df_temp['time_stamp'], unit='s')
 df_temp['date'] = df_temp['date'].dt.date
 df_temp = df_temp.sort_values(by=['date','station_index']) # so you can see the bounds
@@ -65,7 +65,7 @@ d3_df['pm2_5_diff'] = d3_df['pm2_5_AVG'] - d3_df['pm2_5_daily_median']
 # d3_df['freeway_adjacent_4_0'] = d3_df['distance'] < 4
 
 # save outfile
-d3_filename = 'map/station_list_2023_SF.csv'
+d3_filename = 'map/station_list_2023_alaskan-way-tunnel.csv'
 # d3_filename = 'map/station_distance_2023-SF.csv' # if you already have a distance file
 d3_df.to_csv(d3_filename, index=False, quotechar='"', quoting=csv.QUOTE_NONE)
 
