@@ -120,16 +120,20 @@ for row in stations:
     name = row['name']
     AQI = row['pm10_CAunsafe_station_days']
     # magnified color scale for visibility
-    if AQI  <= 5:
+    if AQI < 1:
         color = "green"
+    elif AQI <= 5:
+        color = "#c7ff2d"
     elif AQI <= 10:
         color = "yellow"
     elif AQI <= 20:
+        color = "orange"
+    elif AQI <= 30:
         color = "red"
-    elif AQI <= 35:
-        color = "purple"
-    elif AQI <= 50:
+    elif AQI <= 40:
         color = "#800000"
+    elif AQI <= 50:
+        color = "purple"
     else:
         color = "#800000"
 
@@ -155,14 +159,14 @@ for row in stations:
     popup_text = str(name) + '<br><br># unsafe days in 2023: ' + str(AQI)
     popup = folium.Popup(popup_text, min_width=100,max_width=100)
     # icon = folium.Icon(icon="", icon_color=color, color=color)
-    # folium.CircleMarker(location=[latitude,longitude], popup=popup, color=color, fill_color=color, fill_opacity=0.7).add_to(m)
-
-df_hm = df_stations[['latitude','longitude','pm10_CAunsafe_station_days']]
-HeatMap(df_hm,
-        radius=30,
-        min_opacity=0.4,
-        blur = 18
-               ).add_to(folium.FeatureGroup(name='Heat Map').add_to(m))
-folium.LayerControl().add_to(m)
+    folium.CircleMarker(location=[latitude,longitude], popup=popup, color=color, fill_color=color, fill_opacity=0.7, opacity=0.7).add_to(m)
+#
+# df_hm = df_stations[['latitude','longitude','pm10_CAunsafe_station_days']]
+# HeatMap(df_hm,
+#         radius=20,
+#         min_opacity=0.4,
+#         blur = 18
+#                ).add_to(folium.FeatureGroup(name='Heat Map').add_to(m))
+# folium.LayerControl().add_to(m)
 
 m.save(outfile)
